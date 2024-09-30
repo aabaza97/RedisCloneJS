@@ -1,4 +1,5 @@
 const net = require('net');
+const handleCommands = require('./commandHanlder');
 
 const HOSTNAME = '127.0.0.1';
 const PORT = 6379;
@@ -8,11 +9,10 @@ const server = net.createServer((connection) => {
 
 	// Responding to incoming data
 	connection.on('data', (data) => {
-		if (data.toString().toLocaleLowerCase() === 'ping\r\n') {
-			connection.write('+PONG\r\n');
-		} else {
-			connection.write('Unknown command\r\n');
-		}
+		// Parse incoming strings into buffer arrays split by any white space
+		const args = Buffer.from(data).toString().trim().split(/\s+/);
+		const resp = handleCommands(args);
+		connection.write(resp);
 	});
 });
 
