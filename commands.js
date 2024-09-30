@@ -38,6 +38,8 @@ module.exports.incr = (...args) => {
 		memoryLike[key] = value + 1;
 	} else if (value) {
 		memoryLike[key] = parseInt(value) + 1;
+	} else {
+		memoryLike[key] = 1;
 	}
 
 	return memoryLike[key];
