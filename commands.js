@@ -34,11 +34,16 @@ module.exports.incr = (...args) => {
 	const key = args[0];
 	const value = memoryLike[key];
 
-	if (value && typeof value === 'number') {
-		memoryLike[key] = value + 1;
-	} else if (value) {
+	// If the value stored is not a number, return immedietly
+	if (value && isNaN(parseInt(value))) {
+		return 'ERR value is not an integer or out of range';
+	}
+
+	// If the value stored exists for key and is a number or number pracible
+	if (value && (typeof value === 'number' || !isNaN(parseInt(value)))) {
 		memoryLike[key] = parseInt(value) + 1;
 	} else {
+		// If the value for key doesn't exists at all
 		memoryLike[key] = 1;
 	}
 
