@@ -1,4 +1,4 @@
-const memoryLike = {};
+let memoryLike = {};
 
 module.exports.ping = () => '+pong';
 
@@ -28,4 +28,17 @@ module.exports.get = (...args) => {
 	}
 
 	return '-1';
+};
+
+module.exports.incr = (...args) => {
+	const key = args[0];
+	const value = memoryLike[key];
+
+	if (value && typeof value === 'number') {
+		memoryLike[key] = value + 1;
+	} else if (value) {
+		memoryLike[key] = parseInt(value) + 1;
+	}
+
+	return memoryLike[key];
 };
