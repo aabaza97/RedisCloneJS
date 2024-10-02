@@ -41,7 +41,7 @@ module.exports.incr = (...args) => {
 
 	// If the value stored is not a number, return immedietly
 	if (value && isNaN(parseInt(value))) {
-		return 'ERR value is not an integer or out of range';
+		return '-ERR value is not an integer or out of range';
 	}
 
 	// If the value stored exists for key and is a number or number pracible
@@ -58,5 +58,15 @@ module.exports.incr = (...args) => {
 module.exports.multi = (...args) => {
 	// Activate transaction for exec
 	memoryLike.transaction.isEnabled = true;
+	return '+OK';
+};
+
+module.exports.exec = (...args) => {
+	// If MULTI not called (transaction disabled)
+	if (!memoryLike.transaction.isEnabled) {
+		return '-ERR EXEC without MULTI';
+	}
+
+	// TODO: Execute commands in order
 	return '+OK';
 };
