@@ -1,4 +1,9 @@
-let memoryLike = {};
+let memoryLike = {
+	transaction: {
+		isEnabled: false,
+		commands: [],
+	},
+};
 
 module.exports.ping = () => '+pong';
 
@@ -48,4 +53,10 @@ module.exports.incr = (...args) => {
 	}
 
 	return memoryLike[key];
+};
+
+module.exports.multi = (...args) => {
+	// Activate transaction for exec
+	memoryLike.transaction.isEnabled = true;
+	return '+OK';
 };
