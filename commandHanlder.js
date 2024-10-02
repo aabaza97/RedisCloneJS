@@ -1,6 +1,6 @@
 const commands = require('./commands.js');
 
-const handleCommands = (args) => {
+const handleCommands = (connection, args) => {
 	// Loging incoming parsed args
 	console.log(args);
 
@@ -12,8 +12,13 @@ const handleCommands = (args) => {
 
 	// Responding to incoming command
 	let response = '-Unknown command';
-	if (commandHandler) response = commandHandler(...args.slice(1));
-
+	if (commandHandler) {
+		if (command === 'multi' || 'exec') {
+			response = commandHandler(connection, ...args.slice(1));
+		} else {
+			response = commandHandler(...args.slice(1));
+		}
+	}
 	return (response + '\r\n').toUpperCase();
 };
 

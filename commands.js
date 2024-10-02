@@ -1,8 +1,10 @@
 let memoryLike = {
-	transaction: {
-		isEnabled: false,
-		commands: [],
-	},
+	transactions: {},
+};
+
+const transaction = {
+	isEnabled: true,
+	commands: [],
 };
 
 module.exports.ping = () => '+pong';
@@ -55,16 +57,30 @@ module.exports.incr = (...args) => {
 	return memoryLike[key];
 };
 
-module.exports.multi = (...args) => {
+module.exports.multi = (client, ...args) => {
+	const clientId = client.id.toString();
 	// Activate transaction for exec
-	memoryLike.transaction.isEnabled = true;
+	if (!memoryLike.transactions[clientId]) {
+		memoryLike.transactions[clientId] = { ...transaction };
+	} else {
+		memoryLike.transactions[clientId].isEnabled = true;
+	}
+
 	return '+OK';
 };
 
-module.exports.exec = (...args) => {
+module.exports.exec = (client, ...args) => {
+	const clientId = client.id.toString();
+	const transaction = memoryLike.transactions[clientId];
+	console.log(memoryLike);
 	// If MULTI not called (transaction disabled)
-	if (!memoryLike.transaction.isEnabled) {
+	if (!transaction || !transaction.isEnabled) {
 		return '-ERR EXEC without MULTI';
+	}
+
+	if (transaction.commands.length === 0) {
+		memoryLike.transactions[client.id].isEnabled = false;
+		return '(empty array)';
 	}
 
 	// TODO: Execute commands in order
