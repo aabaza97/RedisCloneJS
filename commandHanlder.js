@@ -13,11 +13,11 @@ const handleCommands = (connection, args) => {
 	// Responding to incoming command
 	let response = '-Unknown command';
 	if (commandHandler) {
-		if (command === 'multi' || 'exec') {
-			response = commandHandler(connection, ...args.slice(1));
-		} else {
-			response = commandHandler(...args.slice(1));
-		}
+		response = commands.queueIfTransactionEnabled(
+			connection,
+			commandHandler,
+			args
+		);
 	}
 	return (response + '\r\n').toUpperCase();
 };

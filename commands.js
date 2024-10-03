@@ -12,14 +12,14 @@ module.exports.ping = () => '+pong';
 module.exports.echo = (...args) => `+${args.join(' ')}`;
 
 module.exports.set = (...args) => {
-	const key = args[0];
-	const value = args[1];
+	const key = args[1];
+	const value = args[2];
 
-	if (args[2] === 'px' && args[3]) {
+	if (args[3] === 'px' && args[4]) {
 		setTimeout(() => {
 			console.log(`deleting ${key}`);
 			delete memoryLike[key];
-		}, args[3]);
+		}, args[4]);
 	}
 
 	memoryLike[key] = value;
@@ -28,7 +28,7 @@ module.exports.set = (...args) => {
 };
 
 module.exports.get = (...args) => {
-	const key = args[0];
+	const key = args[1];
 
 	if (memoryLike[key]) {
 		return memoryLike[key];
@@ -38,7 +38,7 @@ module.exports.get = (...args) => {
 };
 
 module.exports.incr = (...args) => {
-	const key = args[0];
+	const key = args[1];
 	const value = memoryLike[key];
 
 	// If the value stored is not a number, return immedietly
@@ -72,7 +72,7 @@ module.exports.multi = (client, ...args) => {
 module.exports.exec = (client, ...args) => {
 	const clientId = client.id.toString();
 	const transaction = memoryLike.transactions[clientId];
-	console.log(memoryLike);
+
 	// If MULTI not called (transaction disabled)
 	if (!transaction || !transaction.isEnabled) {
 		return '-ERR EXEC without MULTI';
@@ -80,9 +80,43 @@ module.exports.exec = (client, ...args) => {
 
 	if (transaction.commands.length === 0) {
 		memoryLike.transactions[client.id].isEnabled = false;
-		return '(empty array)';
+		return '+(empty array)';
 	}
 
-	// TODO: Execute commands in order
-	return '+OK';
+	// Execute commands in order
+	// TODO: Handle rollback mechanism
+	let history = [];
+	let resps = [];
+	while (memoryLike.transactions[clientId].commands.length !== 0) {
+		// pop the last element (first stored using unshift)
+		const command = memoryLike.transactions[clientId].commands.pop();
+		// push to history
+		history.push(command);
+		// store executed orders
+		resps.push(command.fn(client, ...command.args.slice(1)));
+	}
+
+	// toggle multi flag
+	memoryLike.transactions[client.id].isEnabled = false;
+
+	return '+OK' + '\r\n' + resps.join('\r\n');
+};
+
+module.exports.queueIfTransactionEnabled = (client, commandHandler, args) => {
+	const clientId = client.id.toString();
+	const transaction = memoryLike.transactions[clientId];
+	const isExecCommand = args[0].toLocaleLowerCase() === 'exec';
+
+	// If MULTI not called (transaction disabled) call command naturally
+	if (!transaction || !transaction.isEnabled || isExecCommand) {
+		return commandHandler(client, ...args.slice(1));
+	}
+
+	// Otherwise, queue command into client's transaction (FIFO)
+	memoryLike.transactions[clientId].commands.unshift({
+		fn: commandHandler,
+		args: args,
+	});
+	console.log(memoryLike.transactions[clientId]);
+	return '+(queued)';
 };
